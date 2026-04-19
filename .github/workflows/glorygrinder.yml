@@ -1,0 +1,50 @@
+name: Nexus Sovereign Squad Grinder
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  squad-grind:
+    strategy:
+      matrix:
+        squad_id: [1, 2, 3] # Ye 3 alag servers chalaayega (Total 12 bots)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Android Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y adb docker.io
+
+      - name: Start 4 Virtual Phones (One Squad)
+        run: |
+          # Har server par 4 bots ke liye 4 containers
+          for i in {1..4}; do
+            port=$((5554 + i*2))
+            docker run -d --privileged -p $port:5555 --name bot_$i redroid/redroid:11.0.0-latest
+          done
+          sleep 15
+          # Sabhi 4 bots ko connect karna
+          for i in {1..4}; do
+            port=$((5554 + i*2))
+            adb connect localhost:$port
+          done
+
+      - name: Install Dependencies
+        run: pip install pure-python-adb opencv-python numpy
+
+      - name: Execute Squad Logic
+        run: python nexus_bot_engine.py
+        env:
+          GUILD_ID: "3047387700"
+          SQUAD_ID: ${{ matrix.squad_id }}
