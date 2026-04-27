@@ -8,8 +8,6 @@ on:
 jobs:
   grind:
     runs-on: ubuntu-latest
-    timeout-minutes: 60 
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -20,27 +18,19 @@ jobs:
           python-version: '3.10'
 
       - name: Install ADB
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y adb
+        run: sudo apt-get update && sudo apt-get install -y adb
 
       - name: Start Virtual Android (Redroid)
         run: |
-          # GitHub runner par docker sudo ke saath chalta hai
           sudo docker run -d --privileged -p 5555:5555 --name bot_1 redroid/redroid:11.0.0-latest
-          
-          echo "Waiting for Android boot (40s)..."
+          echo "Waiting for boot (40s)..."
           sleep 40
-          
-          # Connecting to the emulator
           adb connect localhost:5555
-          adb devices
 
       - name: Install Python Dependencies
-        run: |
-          pip install pure-python-adb opencv-python numpy
+        run: pip install pure-python-adb opencv-python numpy
 
       - name: Execute Sovereign Engine
-        run: python nexus_bot_engine.py
+        run: python freefirebotengine.py
         env:
           GUILD_ID: "3047387700"
