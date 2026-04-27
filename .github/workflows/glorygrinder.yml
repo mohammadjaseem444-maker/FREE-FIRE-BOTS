@@ -9,9 +9,10 @@ jobs:
   squad-grind:
     strategy:
       matrix:
-        squad_id: [1, 2, 3] # Ye 3 alag servers chalaayega (Total 12 bots)
+        squad_id: [1, 2, 3]
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 60 
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -21,29 +22,30 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Android Tools
+      - name: Install ADB Only
         run: |
           sudo apt-get update
-          sudo apt-get install -y adb docker.io
+          # Docker pehle se hota hai, isliye sirf adb install karenge
+          sudo apt-get install -y adb
 
-      - name: Start 4 Virtual Phones (One Squad)
+      - name: Start Virtual Android (Redroid)
         run: |
-          # Har server par 4 bots ke liye 4 containers
-          for i in {1..4}; do
-            port=$((5554 + i*2))
-            docker run -d --privileged -p $port:5555 --name bot_$i redroid/redroid:11.0.0-latest
-          done
-          sleep 15
-          # Sabhi 4 bots ko connect karna
-          for i in {1..4}; do
-            port=$((5554 + i*2))
-            adb connect localhost:$port
-          done
+          # Docker.io ki jagah seedha docker command use karenge
+          sudo docker run -d --privileged -p 5555:5555 --name bot_1 redroid/redroid:11.0.0-latest
+          sudo docker run -d --privileged -p 5557:5555 --name bot_2 redroid/redroid:11.0.0-latest
+          
+          echo "Waiting for Android boot (30s)..."
+          sleep 30
+          
+          adb connect localhost:5555
+          adb connect localhost:5557
+          adb devices
 
-      - name: Install Dependencies
-        run: pip install pure-python-adb opencv-python numpy
+      - name: Install Python Dependencies
+        run: |
+          pip install pure-python-adb opencv-python numpy
 
-      - name: Execute Squad Logic
+      - name: Execute Sovereign Engine
         run: python nexus_bot_engine.py
         env:
           GUILD_ID: "3047387700"
