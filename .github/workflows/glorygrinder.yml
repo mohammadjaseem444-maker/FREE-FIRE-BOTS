@@ -8,6 +8,9 @@ on:
 jobs:
   grind:
     runs-on: ubuntu-latest
+    # Poore job ka timeout 1 ghanta kar diya hai
+    timeout-minutes: 60 
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -27,12 +30,12 @@ jobs:
           echo "Connecting to ADB..."
           adb connect localhost:5555
           
-          echo "Waiting for device to come online (Isme 2-3 min lag sakte hain)..."
-          # Ye command tab tak rukega jab tak device ready na ho jaye
-          timeout 300s bash -c 'until adb -s localhost:5555 shell getprop sys.boot_completed | grep -m 1 "1"; do sleep 5; echo "Still booting..."; done'
+          echo "Waiting for device to come online (20 Minute Timeout)..."
+          # 1200 seconds = 20 minutes
+          timeout 1200s bash -c 'until adb -s localhost:5555 shell getprop sys.boot_completed | grep -m 1 "1"; do sleep 15; echo "Still booting (Patience is power)..."; done'
           
           adb devices
-          echo "Device is now ONLINE!"
+          echo "Device is now ONLINE! System is ready for Boom."
 
       - name: Install Python Dependencies
         run: pip install pure-python-adb opencv-python numpy
