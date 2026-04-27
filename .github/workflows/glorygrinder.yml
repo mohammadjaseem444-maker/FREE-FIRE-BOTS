@@ -23,9 +23,16 @@ jobs:
       - name: Start Virtual Android (Redroid)
         run: |
           sudo docker run -d --privileged -p 5555:5555 --name bot_1 redroid/redroid:11.0.0-latest
-          echo "Waiting for boot (40s)..."
-          sleep 40
+          
+          echo "Connecting to ADB..."
           adb connect localhost:5555
+          
+          echo "Waiting for device to come online (Isme 2-3 min lag sakte hain)..."
+          # Ye command tab tak rukega jab tak device ready na ho jaye
+          timeout 300s bash -c 'until adb -s localhost:5555 shell getprop sys.boot_completed | grep -m 1 "1"; do sleep 5; echo "Still booting..."; done'
+          
+          adb devices
+          echo "Device is now ONLINE!"
 
       - name: Install Python Dependencies
         run: pip install pure-python-adb opencv-python numpy
