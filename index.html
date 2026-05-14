@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>JK Arena Esports</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyBIBTXAzsZHtRFINYgfEFh6aXCdLW2vPEE",
+  authDomain:"jk-arena-esports.firebaseapp.com",
+  databaseURL:"https://jk-arena-esports-default-rtdb.firebaseio.com",
+  projectId:"jk-arena-esports",
+  storageBucket:"jk-arena-esports.firebasestorage.app",
+  messagingSenderId:"400462048488",
+  appId:"1:400462048488:web:46e8b9ef43f335b54ead5d"
+});
+const auth = firebase.auth();
+const db = firebase.database();
+
+auth.onAuthStateChanged(async user => {
+  if(user){
+    window.currentUser = user;
+    const snap = await db.ref('players/'+user.uid).get();
+    if(snap.exists()){
+      window.playerProfile = snap.val();
+      document.getElementById('profileSetupOverlay').style.display='none';
+    } else {
+      window.playerProfile = null;
+      const el = document.getElementById('setup-name');
+      if(el && user.displayName) el.value = user.displayName;
+      document.getElementById('profileSetupOverlay').style.display='flex';
+    }
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainApp').style.display='flex';
+    initApp();
+  } else {
+    window.currentUser = null;
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('mainApp').style.display='none';
+    document.getElementById('profileSetupOverlay').style.display='none';
+  }
+});
+</script>
+<style>
+:root{--fire:#FF6B00;--fire2:#FF3A00;--gold:#FFD700;--bg:#060A0F;--bg2:#0D1520;--bg3:#111C2D;--card:#0A1628;--border:rgba(255,107,0,0.3);--border2:rgba(255,255,255,0.07);--text:#E8EDF5;--muted:#6B7FA0;--green:#22FF6A;--red:#FF4444;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--fire);border-radius:99px;}
+input,select,textarea{-webkit-appearance:none;}
+button{font-family:'Rajdhani',sans-serif;cursor:pointer;}
+
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg);background-image:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,107,0,0.1),transparent 65%);}
+.login-box{width:100%;max-width:380px;padding:40px 28px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:24px;margin:16px;animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,var(--fire),var(--fire2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px;box-shadow:0 0 30px rgba(255,107,0,0.5);animation:pulseL 2s infinite;}
+@keyframes pulseL{0%,100%{box-shadow:0 0 20px rgba(255,107,0,.5);}50%{box-shadow:0 0 40px rgba(255,107,0,.9);}}
+.login-box h1{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;margin-bottom:4px;}
+.login-box h1 span{color:var(--fire);}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border-radius:12px;background:#fff;color:#1a1a1a;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;transition:all .3s;margin-bottom:16px;}
+.google-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,255,255,.15);}
+.google-btn img{width:20px;height:20px;}
+.or-div{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.or-div::before,.or-div::after{content:'';flex:1;height:1px;background:var(--border2);}
+.or-div span{font-size:12px;color:var(--muted);}
+.phone-row{display:flex;gap:8px;margin-bottom:10px;}
+.cc{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:12px;color:var(--text);font-size:15px;font-weight:700;width:70px;text-align:center;}
+.linput{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:13px 16px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;transition:border-color .3s;margin-bottom:10px;}
+.linput:focus{border-color:var(--fire);}
+.otp-sec{display:none;margin-bottom:10px;}
+.otp-inputs{display:flex;gap:8px;justify-content:center;margin-bottom:10px;}
+.otp-inp{width:44px;height:52px;text-align:center;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;outline:none;transition:border-color .3s;}
+.otp-inp:focus{border-color:var(--fire);}
+.lbtn{width:100%;padding:14px;background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;transition:all .3s;}
+.lbtn:hover{box-shadow:0 0 28px rgba(255,107,0,.5);}
+.lerr{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+.lfooter{font-size:11px;color:var(--muted);margin-top:20px;}
+.lfooter a{color:var(--fire);}
+
+/* SETUP */
+#profileSetupOverlay{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);padding:16px;}
+.setup-box{width:100%;max-width:380px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:36px 24px;animation:fadeUp .3s ease;}
+.setup-box h2{font-family:'Orbitron',sans-serif;font-size:18px;margin-bottom:4px;}
+.setup-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.fg input,.fg select{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;transition:border-color .3s;}
+.fg input:focus,.fg select:focus{border-color:var(--fire);}
+.fsub{width:100%;padding:14px;background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;border:none;border-radius:10px;font-family:'Orbitron',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;transition:all .3s;margin-top:8px;}
+.fsub:hover{box-shadow:0 0 24px rgba(255,107,0,.5);}
+
+/* APP */
+#mainApp{display:none;flex-direction:column;height:100vh;width:100%;}
+.app-header{flex-shrink:0;height:56px;background:rgba(6,10,15,.95);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100;}
+.hlogo{display:flex;align-items:center;gap:8px;}
+.hlogo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--fire),var(--fire2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 14px rgba(255,107,0,.5);}
+.hlogo-txt{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;line-height:1.2;}
+.hlogo-txt span{color:var(--fire);}
+.hright{display:flex;align-items:center;gap:10px;}
+.nbtn{background:rgba(255,107,0,.1);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:15px;color:var(--text);transition:all .3s;position:relative;}
+.nbadge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;}
+.uav{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--fire2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;border:2px solid transparent;transition:all .3s;overflow:hidden;}
+.uav img{width:100%;height:100%;object-fit:cover;}
+.uav:hover{border-color:var(--fire);}
+
+/* TICKER */
+.ticker-wrap{flex-shrink:0;background:linear-gradient(90deg,var(--fire2),var(--fire));padding:7px 0;overflow:hidden;white-space:nowrap;}
+.ticker{display:inline-block;animation:tick 35s linear infinite;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* NOTIF */
+.ndrop{position:fixed;top:56px;right:0;width:100%;max-width:340px;background:var(--bg3);border:1px solid var(--border2);border-radius:0 0 16px 16px;z-index:200;display:none;max-height:60vh;overflow-y:auto;box-shadow:0 16px 40px rgba(0,0,0,.4);}
+.ndrop.open{display:block;}
+.ndrop-head{padding:14px 16px;border-bottom:1px solid var(--border2);font-family:'Orbitron',sans-serif;font-size:13px;color:var(--fire);}
+.nitem{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);}
+.nitem:last-child{border-bottom:none;}
+.nitem-title{font-weight:700;font-size:13px;margin-bottom:3px;}
+.nitem-msg{font-size:12px;color:var(--muted);}
+
+/* PAGES */
+.pages-wrap{flex:1;overflow:hidden;position:relative;}
+.page{position:absolute;inset:0;overflow-y:auto;padding:16px 16px 80px;display:none;}
+.page.active{display:block;}
+
+/* BOTTOM NAV */
+.bnav{flex-shrink:0;height:64px;background:rgba(8,14,26,.98);border-top:1px solid var(--border2);display:flex;align-items:center;z-index:100;}
+.navi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border:none;background:none;color:var(--muted);}
+.navi.active{color:var(--fire);}
+.navi.active .nicon{transform:translateY(-2px);filter:drop-shadow(0 0 6px var(--fire));}
+.nicon{font-size:20px;transition:all .2s;}
+.nlbl{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+
+/* HOME */
+.wbanner{background:linear-gradient(135deg,rgba(255,107,0,.12),rgba(255,58,0,.06));border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.wbanner::after{content:'🎮';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:48px;opacity:.15;}
+.wname{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;margin-bottom:4px;}
+.wname span{color:var(--fire);}
+.wsub{font-size:13px;color:var(--muted);}
+.ldot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px;animation:blink 1.2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.mstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.mstat{background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:14px 10px;text-align:center;}
+.mstat-val{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--fire);}
+.mstat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.stitle{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.stitle a{font-size:11px;color:var(--fire);text-decoration:none;font-family:'Rajdhani',sans-serif;font-weight:600;}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.ps{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:12px;text-align:center;}
+.ps-num{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--fire);}
+.ps-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+.steps{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
+.step{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:14px;}
+.snum{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--fire2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;flex-shrink:0;}
+.stxt strong{display:block;font-size:14px;font-weight:700;}
+.stxt span{font-size:12px;color:var(--muted);}
+
+/* TOURNAMENT CARDS */
+.fscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;}
+.fscroll::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:7px 18px;border-radius:99px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all .25s;}
+.tab.active{background:var(--fire);color:#fff;border-color:var(--fire);}
+.tab:hover:not(.active){border-color:var(--fire);color:var(--fire);}
+.tgrid{display:flex;flex-direction:column;gap:14px;}
+.tcard{background:var(--card);border:1px solid rgba(255,107,0,.15);border-radius:16px;overflow:hidden;transition:all .3s;}
+.tcard:hover{border-color:var(--fire);box-shadow:0 8px 30px rgba(255,107,0,.1);}
+.tbanner{height:90px;position:relative;overflow:hidden;background:linear-gradient(135deg,#0D1F35,#1A0D05);display:flex;align-items:center;justify-content:center;}
+.tbanner-em{font-size:50px;opacity:.18;}
+.tbanner-ov{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,107,0,.2),transparent);}
+.tbadge{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.bl{background:rgba(34,255,106,.15);color:var(--green);border:1px solid var(--green);}
+.bu{background:rgba(255,107,0,.15);color:var(--fire);border:1px solid var(--fire);}
+.br{background:rgba(0,176,255,.15);color:#00B0FF;border:1px solid #00B0FF;}
+.be{background:rgba(107,127,160,.12);color:var(--muted);border:1px solid var(--muted);}
+.tptag{position:absolute;bottom:0;right:0;background:linear-gradient(135deg,var(--fire),var(--fire2));padding:5px 12px;border-top-left-radius:10px;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;}
+.tbody{padding:14px;}
+.tname{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;margin-bottom:8px;}
+.tmeta{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+.tmeta-i{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);}
+.tmeta-i .ico{color:var(--fire);font-size:13px;}
+.tirow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.tibox{background:rgba(255,107,0,.06);border:1px solid rgba(255,107,0,.1);border-radius:8px;padding:8px;text-align:center;}
+.tival{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--fire);}
+.tilbl{font-size:9px;color:var(--muted);margin-top:1px;text-transform:uppercase;letter-spacing:.5px;}
+.sbar{margin-bottom:12px;}
+.sbar-top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;}
+.sbar-top span{color:var(--muted);}
+.sbar-top strong{color:var(--fire);}
+.barbg{height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;}
+.barfill{height:100%;background:linear-gradient(90deg,var(--fire),var(--gold));border-radius:99px;}
+.jbtn{width:100%;padding:12px;background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;border:none;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;transition:all .3s;}
+.jbtn:hover{box-shadow:0 0 20px rgba(255,107,0,.4);}
+.jbtn:disabled{opacity:.5;cursor:not-allowed;}
+.nodata{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;}
+.nodata .ndi{font-size:40px;margin-bottom:12px;}
+
+/* LEADERBOARD */
+.lbwrap{background:var(--card);border:1px solid var(--border2);border-radius:16px;overflow:hidden;}
+.lbhr{display:grid;grid-template-columns:44px 1fr 70px 70px;padding:10px 14px;background:rgba(255,107,0,.06);border-bottom:1px solid var(--border2);font-size:10px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.lbrow{display:grid;grid-template-columns:44px 1fr 70px 70px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;transition:background .2s;}
+.lbrow:last-child{border-bottom:none;}
+.lbrow:hover{background:rgba(255,107,0,.04);}
+.lbrank{font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;}
+.r1{color:var(--gold);}.r2{color:#C0C0C0;}.r3{color:#CD7F32;}.rx{color:var(--muted);font-size:13px;}
+.lbplayer{display:flex;align-items:center;gap:10px;}
+.pav{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--fire2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+.pnm{font-weight:700;font-size:13px;}
+.pid{font-size:10px;color:var(--muted);}
+.lbkills{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:var(--fire);text-align:center;}
+.lbprize{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--gold);text-align:right;}
+
+/* WALLET */
+.wcardw{background:linear-gradient(135deg,rgba(255,107,0,.15),rgba(255,58,0,.08));border:1px solid var(--border);border-radius:18px;padding:24px;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;}
+.wcardw::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,107,0,.2),transparent 70%);}
+.wlbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.wamt{font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;color:var(--fire);}
+.wsub{font-size:12px;color:var(--muted);margin-top:4px;}
+.wactions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.wbtn{padding:12px;border-radius:10px;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;transition:all .3s;}
+.wp{background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;}
+.wo{background:transparent;border:1px solid var(--border);color:var(--text);}
+.wo:hover{border-color:var(--fire);color:var(--fire);}
+.wform{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:20px;margin-bottom:20px;}
+.wform h3{font-family:'Orbitron',sans-serif;font-size:14px;margin-bottom:16px;color:var(--fire);}
+.txhist{background:var(--card);border:1px solid var(--border2);border-radius:16px;overflow:hidden;}
+.txhead{padding:14px 16px;border-bottom:1px solid var(--border2);font-family:'Orbitron',sans-serif;font-size:12px;color:var(--fire);}
+.txi{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);}
+.txi:last-child{border-bottom:none;}
+.txl{display:flex;align-items:center;gap:10px;}
+.txicon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.txname{font-weight:700;font-size:13px;}
+.txdate{font-size:11px;color:var(--muted);}
+.txamt{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;}
+.cr{color:var(--green);}.dr{color:var(--red);}
+
+/* PROFILE */
+.phead{background:linear-gradient(135deg,rgba(255,107,0,.1),rgba(255,58,0,.05));border:1px solid var(--border);border-radius:18px;padding:24px 16px;text-align:center;margin-bottom:16px;}
+.pavbig{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--fire2));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;margin:0 auto 12px;border:3px solid var(--fire);overflow:hidden;}
+.pavbig img{width:100%;height:100%;object-fit:cover;}
+.pname{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;margin-bottom:4px;}
+.puid{font-size:12px;color:var(--muted);}
+.pbadge{display:inline-block;margin-top:8px;background:rgba(255,107,0,.15);border:1px solid var(--border);border-radius:99px;padding:4px 14px;font-size:12px;font-weight:700;color:var(--fire);}
+.psgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+.psbox{background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:14px;text-align:center;}
+.psval{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--fire);}
+.pslbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;}
+.pinfo{background:var(--card);border:1px solid var(--border2);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.pirow{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);}
+.pirow:last-child{border-bottom:none;}
+.pikey{font-size:12px;color:var(--muted);}
+.pival{font-size:14px;font-weight:700;}
+.logbtn{width:100%;padding:14px;border-radius:12px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:#FF6B6B;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;transition:all .3s;margin-bottom:16px;}
+.logbtn:hover{background:rgba(255,68,68,.2);}
+.mw{text-align:center;padding:8px;font-size:12px;color:var(--muted);}
+.mw span{color:var(--fire);}
+
+/* MODAL */
+.moverlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;}
+.moverlay.open{display:flex;}
+.modal{background:var(--bg3);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:28px 20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;position:relative;animation:slideUp .3s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:none;}}
+.mhandle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:99px;margin:0 auto 20px;}
+.mclose{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;}
+.mclose:hover{color:var(--fire);}
+.modal h3{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;margin-bottom:4px;}
+.msub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.rid-box{background:rgba(255,107,0,.1);border:2px solid var(--fire);border-radius:12px;padding:16px;margin-bottom:12px;text-align:center;}
+.rid-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.rid-val{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--fire);letter-spacing:4px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(20px);z-index:99999;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-weight:700;font-size:14px;white-space:nowrap;opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(min-width:480px){.page{padding:20px 20px 80px;}.modal{border-radius:20px;margin:20px;width:calc(100% - 40px);}.moverlay{align-items:center;}}
+@media(min-width:768px){#mainApp{max-width:480px;margin:0 auto;}body{display:flex;justify-content:center;overflow:auto;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🎮</div>
+    <h1>JK <span>ARENA</span> ESPORTS</h1>
+    <p class="login-sub">India's #1 Free Fire Tournament Platform</p>
+    <button class="google-btn" onclick="googleLogin()">
+      <img src="https://www.google.com/favicon.ico" alt="G"/> Continue with Google
+    </button>
+    <div class="or-div"><span>OR</span></div>
+    <div id="phoneSection">
+      <div class="phone-row">
+        <div class="cc">+91</div>
+        <input class="linput" id="phoneInput" type="tel" placeholder="Mobile Number" maxlength="10" style="margin-bottom:0;flex:1;" oninput="this.value=this.value.replace(/\D/g,'')"/>
+      </div>
+      <div id="recaptcha-container" style="margin-top:8px;"></div>
+      <button class="lbtn" id="sendOtpBtn" onclick="sendOTP()" style="margin-top:10px;">📱 Send OTP</button>
+    </div>
+    <div class="otp-sec" id="otpSection">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;">OTP sent to +91 <strong id="otpPhone"></strong></p>
+      <div class="otp-inputs">
+        <input class="otp-inp" id="o1" maxlength="1" oninput="om(this,'o2')"/>
+        <input class="otp-inp" id="o2" maxlength="1" oninput="om(this,'o3')"/>
+        <input class="otp-inp" id="o3" maxlength="1" oninput="om(this,'o4')"/>
+        <input class="otp-inp" id="o4" maxlength="1" oninput="om(this,'o5')"/>
+        <input class="otp-inp" id="o5" maxlength="1" oninput="om(this,'o6')"/>
+        <input class="otp-inp" id="o6" maxlength="1" oninput="om(this,null)"/>
+      </div>
+      <button class="lbtn" onclick="verifyOTP()">✅ Verify OTP</button>
+      <p style="font-size:12px;color:var(--fire);margin-top:10px;text-align:center;" onclick="resendOTP()">Resend OTP</p>
+    </div>
+    <div class="lerr" id="loginErr"></div>
+    <div class="lfooter">By continuing you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="profileSetupOverlay">
+  <div class="setup-box">
+    <div style="font-size:36px;margin-bottom:12px;text-align:center">🎮</div>
+    <h2 style="text-align:center">Setup Profile</h2>
+    <p style="text-align:center">Enter your Free Fire details to continue</p>
+    <div class="fg"><label>Your Name / IGN</label><input id="setup-name" placeholder="In-game name"/></div>
+    <div class="fg"><label>Free Fire UID</label><input id="setup-ffuid" placeholder="e.g. 4521897632" type="tel"/></div>
+    <div class="fg"><label>Mobile Number</label><input id="setup-mobile" placeholder="+91 XXXXXXXXXX" type="tel"/></div>
+    <button class="fsub" onclick="saveProfile()">🚀 Start Playing</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="flex-direction:column;">
+  <div class="app-header">
+    <div class="hlogo">
+      <div class="hlogo-icon">🎮</div>
+      <div class="hlogo-txt">JK <span>ARENA</span><br>ESPORTS</div>
+    </div>
+    <div class="hright">
+      <button class="nbtn" onclick="toggleNotif()" id="notifBtn">🔔<div class="nbadge" id="notifBadge">0</div></button>
+      <div class="uav" id="uavBtn" onclick="navTo('profile')"><span id="avatarTxt">👤</span></div>
+    </div>
+  </div>
+
+  <div class="ndrop" id="ndrop">
+    <div class="ndrop-head">🔔 Announcements</div>
+    <div id="notifList"><div class="nitem"><div class="nitem-title">Welcome to JK Arena! 🎮</div><div class="nitem-msg">Register & win real cash daily!</div></div></div>
+  </div>
+
+  <div class="ticker-wrap">
+    <div class="ticker" id="tickerEl">
+      <span style="margin-right:50px">🔥 MEGA TOURNAMENT — ₹50,000 PRIZE POOL</span>
+      <span style="margin-right:50px">★</span>
+      <span style="margin-right:50px">🏆 SQUAD SHOWDOWN — REGISTRATION OPEN</span>
+      <span style="margin-right:50px">★</span>
+      <span style="margin-right:50px">⚡ SOLO CLASH — ₹25,000 PRIZE</span>
+      <span style="margin-right:50px">★</span>
+      <span style="margin-right:50px">🔥 MEGA TOURNAMENT — ₹50,000 PRIZE POOL</span>
+      <span style="margin-right:50px">★</span>
+      <span style="margin-right:50px">🏆 SQUAD SHOWDOWN — REGISTRATION OPEN</span>
+      <span style="margin-right:50px">★</span>
+      <span style="margin-right:50px">⚡ SOLO CLASH — ₹25,000 PRIZE</span>
+      <span style="margin-right:50px">★</span>
+    </div>
+  </div>
+
+  <div class="pages-wrap">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="wbanner">
+        <div class="wname">Hey, <span id="wname">Champion</span>! 👋</div>
+        <div class="wsub"><span class="ldot"></span>Tournaments are live right now</div>
+      </div>
+      <div class="mstats">
+        <div class="mstat"><div class="mstat-val" id="uMatches">0</div><div class="mstat-lbl">Matches</div></div>
+        <div class="mstat"><div class="mstat-val" id="uWins">0</div><div class="mstat-lbl">Wins</div></div>
+        <div class="mstat"><div class="mstat-val" id="uPrize">₹0</div><div class="mstat-lbl">Earned</div></div>
+      </div>
+      <div class="stitle">🔥 Live & Upcoming <a href="#" onclick="navTo('tournaments');return false;">View All →</a></div>
+      <div class="tgrid" id="homeTourneys"><div class="nodata"><div class="ndi">⏳</div>Loading...</div></div>
+      <div class="stitle" style="margin-top:20px;">🌐 Platform Stats</div>
+      <div class="pstats">
+        <div class="ps"><div class="ps-num">50K+</div><div class="ps-lbl">Players</div></div>
+        <div class="ps"><div class="ps-num">₹10L+</div><div class="ps-lbl">Prize</div></div>
+        <div class="ps"><div class="ps-num">2K+</div><div class="ps-lbl">Matches</div></div>
+      </div>
+      <div class="stitle" style="margin-top:20px;">⚡ How to Play</div>
+      <div class="steps">
+        <div class="step"><div class="snum">01</div><div class="stxt"><strong>Register & Login</strong><span>Create your profile with FF UID</span></div></div>
+        <div class="step"><div class="snum">02</div><div class="stxt"><strong>Pick Tournament</strong><span>Choose Solo, Duo or Squad match</span></div></div>
+        <div class="step"><div class="snum">03</div><div class="stxt"><strong>Pay Entry Fee</strong><span>Secure payment via UPI/Paytm</span></div></div>
+        <div class="step"><div class="snum">04</div><div class="stxt"><strong>Get Room ID & Win</strong><span>Play & collect prize in wallet</span></div></div>
+      </div>
+      <div class="mw" style="margin-top:20px;">Made with ❤️ <span>Abid</span></div>
+    </div>
+
+    <!-- TOURNAMENTS -->
+    <div class="page" id="page-tournaments">
+      <div class="fscroll">
+        <button class="tab active" onclick="filterT(this,'all')">All</button>
+        <button class="tab" onclick="filterT(this,'solo')">Solo</button>
+        <button class="tab" onclick="filterT(this,'duo')">Duo</button>
+        <button class="tab" onclick="filterT(this,'squad')">Squad</button>
+        <button class="tab" onclick="filterT(this,'live')">🔴 Live</button>
+        <button class="tab" onclick="filterT(this,'free')">Free</button>
+      </div>
+      <div class="tgrid" id="tourneyList"><div class="nodata"><div class="ndi">⏳</div>Loading...</div></div>
+      <div class="mw" style="margin-top:16px;">Made with ❤️ <span>Abid</span></div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="page" id="page-leaderboard">
+      <div class="stitle" style="margin-bottom:16px;">🏅 Global Rankings</div>
+      <div class="lbwrap">
+        <div class="lbhr"><div>Rank</div><div>Player</div><div style="text-align:center">Kills</div><div style="text-align:right">Prize</div></div>
+        <div id="lbList"><div class="nodata"><div class="ndi">⏳</div>Loading...</div></div>
+      </div>
+      <div class="mw" style="margin-top:16px;">Made with ❤️ <span>Abid</span></div>
+    </div>
+
+    <!-- WALLET -->
+    <div class="page" id="page-wallet">
+      <div class="wcardw">
+        <div class="wlbl">Total Balance</div>
+        <div class="wamt">₹<span id="walBal">0</span></div>
+        <div class="wsub">Prize Winnings</div>
+        <div class="wactions">
+          <button class="wbtn wp" onclick="document.getElementById('wdForm').scrollIntoView({behavior:'smooth'})">💸 Withdraw</button>
+          <button class="wbtn wo" onclick="loadWallet()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="wform" id="wdForm">
+        <h3>💸 Withdraw Prize</h3>
+        <div class="fg"><label>UPI ID</label><input id="wd-upi" placeholder="yourname@paytm"/></div>
+        <div class="fg"><label>Amount (₹)</label><input id="wd-amt" type="number" placeholder="Min ₹100"/></div>
+        <div class="fg"><label>Method</label>
+          <select id="wd-meth"><option>UPI / GPay</option><option>Paytm</option><option>PhonePe</option><option>Bank Transfer</option></select>
+        </div>
+        <button class="fsub" onclick="doWithdraw()">📤 Submit Request</button>
+      </div>
+      <div class="txhist">
+        <div class="txhead">📋 Transaction History</div>
+        <div id="txList"><div class="nodata"><div class="ndi">📭</div>No transactions yet</div></div>
+      </div>
+      <div class="mw" style="margin-top:16px;">Made with ❤️ <span>Abid</span></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="phead">
+        <div class="pavbig" id="pavbig"><span id="pavtxt">🎮</span></div>
+        <div class="pname" id="pNameEl">Champion</div>
+        <div class="puid" id="pUidEl">FF UID: —</div>
+        <div class="pbadge">JK Arena Player 🔥</div>
+      </div>
+      <div class="psgrid">
+        <div class="psbox"><div class="psval" id="ps-m">0</div><div class="pslbl">Matches</div></div>
+        <div class="psbox"><div class="psval" id="ps-w">0</div><div class="pslbl">Wins</div></div>
+        <div class="psbox"><div class="psval" id="ps-k">0</div><div class="pslbl">Kills</div></div>
+        <div class="psbox"><div class="psval" id="ps-p">₹0</div><div class="pslbl">Prize</div></div>
+      </div>
+      <div class="pinfo">
+        <div class="pirow"><span class="pikey">Name / IGN</span><span class="pival" id="pi-name">—</span></div>
+        <div class="pirow"><span class="pikey">Free Fire UID</span><span class="pival" id="pi-uid" style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--fire)">—</span></div>
+        <div class="pirow"><span class="pikey">Mobile</span><span class="pival" id="pi-mob">—</span></div>
+        <div class="pirow"><span class="pikey">Email</span><span class="pival" id="pi-email" style="font-size:12px">—</span></div>
+      </div>
+      <button class="logbtn" onclick="doLogout()">🚪 Logout</button>
+      <div class="mw">Made with ❤️ <span>Abid</span></div>
+    </div>
+
+  </div>
+
+  <div class="bnav">
+    <button class="navi active" id="nav-home" onclick="navTo('home')"><div class="nicon">🏠</div><div class="nlbl">Home</div></button>
+    <button class="navi" id="nav-tournaments" onclick="navTo('tournaments')"><div class="nicon">🏆</div><div class="nlbl">Play</div></button>
+    <button class="navi" id="nav-leaderboard" onclick="navTo('leaderboard')"><div class="nicon">🥇</div><div class="nlbl">Rank</div></button>
+    <button class="navi" id="nav-wallet" onclick="navTo('wallet')"><div class="nicon">💸</div><div class="nlbl">Wallet</div></button>
+    <button class="navi" id="nav-profile" onclick="navTo('profile')"><div class="nicon">👤</div><div class="nlbl">Profile</div></button>
+  </div>
+</div>
+
+<!-- JOIN MODAL -->
+<div class="moverlay" id="joinModal">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <button class="mclose" onclick="closeM('joinModal')">✕</button>
+    <h3 id="jmTitle">🔥 Join Tournament</h3>
+    <p class="msub" id="jmSub">Fill details to register</p>
+    <input type="hidden" id="jTid"/>
+    <div class="fg"><label>Player Name / IGN</label><input id="j-name" placeholder="Your in-game name"/></div>
+    <div class="fg"><label>Free Fire UID</label><input id="j-uid" placeholder="e.g. 4521897632" type="tel"/></div>
+    <div class="fg"><label>Mobile Number</label><input id="j-mob" placeholder="+91 XXXXXXXXXX" type="tel"/></div>
+    <div class="fg" id="teamGrp" style="display:none"><label>Team Name</label><input id="j-team" placeholder="Your team name"/></div>
+    <div class="fg"><label>Payment via</label>
+      <select id="j-pay"><option>UPI / GPay</option><option>Paytm</option><option>PhonePe</option><option>Bank Transfer</option></select>
+    </div>
+    <div id="payInfo" style="background:rgba(255,107,0,.08);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;display:none;">
+      <p style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--fire);">💳 Payment Info</p>
+      <p id="upiLine" style="font-size:12px;color:var(--muted);">Send exact entry fee amount. Room ID shared 30 mins before match.</p>
+    </div>
+    <button class="fsub" onclick="submitJoin()">⚡ CONFIRM REGISTRATION</button>
+  </div>
+</div>
+
+<!-- ROOM ID MODAL -->
+<div class="moverlay" id="roomModal">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <button class="mclose" onclick="closeM('roomModal')">✕</button>
+    <h3>🔑 Room Details</h3>
+    <p class="msub" id="rmTourney">Match Room ID</p>
+    <div style="text-align:center;padding:10px 0;">
+      <div class="rid-box"><div class="rid-lbl">Room ID</div><div class="rid-val" id="rmId">—</div></div>
+      <div class="rid-box" style="border-color:var(--gold);background:rgba(255,215,0,.08);">
+        <div class="rid-lbl">Password</div>
+        <div class="rid-val" style="color:var(--gold)" id="rmPass">—</div>
+      </div>
+      <p id="rmNotes" style="font-size:12px;color:var(--muted);margin-top:12px;"></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ Done!</div>
+
+<script>
+let curNav='home', allT=[];
+
+// NAV
+function navTo(s){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navi').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+s)?.classList.add('active');
+  document.getElementById('nav-'+s)?.classList.add('active');
+  curNav=s;
+  document.getElementById('ndrop').classList.remove('open');
+  if(s==='tournaments') renderT('all');
+  if(s==='leaderboard') loadLB();
+  if(s==='wallet') loadWallet();
+  if(s==='profile') updateUI();
+}
+
+// AUTH
+function googleLogin(){
+  const provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e=>showErr('Google login failed: '+e.message));
+}
+
+function sendOTP(){
+  const ph=document.getElementById('phoneInput').value.trim();
+  if(ph.length!==10){showErr('Enter valid 10-digit number');return;}
+  document.getElementById('sendOtpBtn').textContent='Sending...';
+  if(window.rcv){try{window.rcv.clear();}catch(e){}}
+  window.rcv=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
+  auth.signInWithPhoneNumber('+91'+ph,window.rcv)
+    .then(r=>{
+      window.confirmRes=r;
+      document.getElementById('otpPhone').textContent='+91'+ph;
+      document.getElementById('otpSection').style.display='block';
+      document.getElementById('phoneSection').style.display='none';
+      document.getElementById('o1').focus();
+      showToast('OTP sent! 📱');
+    })
+    .catch(e=>{
+      showErr('OTP failed. Check Firebase Console → Phone Auth enabled?');
+      document.getElementById('sendOtpBtn').textContent='📱 Send OTP';
+    });
+}
+
+function resendOTP(){
+  document.getElementById('otpSection').style.display='none';
+  document.getElementById('phoneSection').style.display='block';
+  document.getElementById('sendOtpBtn').textContent='📱 Send OTP';
+}
+function om(el,nid){if(el.value.length===1&&nid)document.getElementById(nid).focus();}
+
+function verifyOTP(){
+  const otp=['o1','o2','o3','o4','o5','o6'].map(id=>document.getElementById(id).value).join('');
+  if(otp.length!==6){showErr('Enter complete 6-digit OTP');return;}
+  window.confirmRes.confirm(otp).catch(e=>showErr('Wrong OTP. Try again.'));
+}
+
+function doLogout(){
+  if(!confirm('Logout?'))return;
+  auth.signOut();
+}
+function showErr(m){
+  const e=document.getElementById('loginErr');
+  e.textContent=m;e.style.display='block';
+  setTimeout(()=>e.style.display='none',5000);
+}
+
+// PROFILE
+async function saveProfile(){
+  const name=document.getElementById('setup-name').value.trim();
+  const ffuid=document.getElementById('setup-ffuid').value.trim();
+  const mobile=document.getElementById('setup-mobile').value.trim();
+  if(!name||!ffuid){showToast('Name & FF UID required!');return;}
+  const user=window.currentUser;
+  const data={name,ffuid,mobile,email:user.email||'',photoURL:user.photoURL||'',uid:user.uid,matches:0,wins:0,kills:0,prizeWon:0,status:'Active',createdAt:Date.now()};
+  try{
+    await db.ref('players/'+user.uid).set(data);
+    window.playerProfile=data;
+    document.getElementById('profileSetupOverlay').style.display='none';
+    initApp();
+    showToast('Profile saved! Welcome 🎮');
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+// INIT
+function initApp(){
+  updateUI();
+  loadTourneys();
+  loadAnnouncements();
+}
+
+function updateUI(){
+  const u=window.currentUser, p=window.playerProfile;
+  if(!u)return;
+  const name=p?.name||u.displayName||'Champion';
+  const init=name.charAt(0).toUpperCase();
+  const av=document.getElementById('uavBtn');
+  av.innerHTML=u.photoURL?`<img src="${u.photoURL}" alt="av"/>`:`<span>${init}</span>`;
+  document.getElementById('wname').textContent=name.split(' ')[0];
+  document.getElementById('uMatches').textContent=p?.matches||0;
+  document.getElementById('uWins').textContent=p?.wins||0;
+  document.getElementById('uPrize').textContent='₹'+(p?.prizeWon||0);
+  document.getElementById('pNameEl').textContent=name;
+  document.getElementById('pUidEl').textContent='FF UID: '+(p?.ffuid||'—');
+  const pb=document.getElementById('pavbig');
+  pb.innerHTML=u.photoURL?`<img src="${u.photoURL}" alt="av"/>`:`<span style="font-size:28px">${init}</span>`;
+  document.getElementById('pi-name').textContent=name;
+  document.getElementById('pi-uid').textContent=p?.ffuid||'—';
+  document.getElementById('pi-mob').textContent=p?.mobile||u.phoneNumber||'—';
+  document.getElementById('pi-email').textContent=u.email||'—';
+  document.getElementById('ps-m').textContent=p?.matches||0;
+  document.getElementById('ps-w').textContent=p?.wins||0;
+  document.getElementById('ps-k').textContent=p?.kills||0;
+  document.getElementById('ps-p').textContent='₹'+(p?.prizeWon||0);
+}
+
+// TOURNAMENTS — realtime listener
+function loadTourneys(){
+  db.ref('tournaments').on('value', snap=>{
+    allT=[];
+    if(snap.exists()) snap.forEach(c=>allT.unshift({id:c.key,...c.val()}));
+    const active=allT.filter(t=>t.status!=='Ended').slice(0,3);
+    const el=document.getElementById('homeTourneys');
+    el.innerHTML=active.length?active.map(buildCard).join(''):'<div class="nodata"><div class="ndi">🏆</div>No tournaments yet. Check back soon!</div>';
+    if(curNav==='tournaments') renderT('all');
+  });
+}
+
+function buildCard(t){
+  const me={Solo:'👤',Duo:'👥',Squad:'🔫'}[t.mode]||'🎮';
+  const filled=t.filledSlots||0, max=t.slots||100;
+  const pct=Math.min(100,Math.round((filled/max)*100));
+  const full=filled>=max, ended=t.status==='Ended';
+  const sc={Live:'bl',Upcoming:'bu',Registering:'br',Ended:'be'}[t.status]||'bu';
+  const btxt=ended?'ENDED':full?'FULL':'JOIN NOW 🔥';
+  return `<div class="tcard">
+    <div class="tbanner">
+      <div class="tbanner-em">${me}</div>
+      <div class="tbanner-ov"></div>
+      <span class="tbadge ${sc}">${t.status==='Live'?'● ':''}${t.status||'Upcoming'}</span>
+      <div class="tptag">₹${Number(t.prizePool||0).toLocaleString('en-IN')}</div>
+    </div>
+    <div class="tbody">
+      <div class="tname">${t.name||'Tournament'}</div>
+      <div class="tmeta">
+        <div class="tmeta-i"><span class="ico">${me}</span>${t.mode||'Solo'}</div>
+        <div class="tmeta-i"><span class="ico">🗺️</span>${t.map||'Bermuda'}</div>
+        ${t.matchDate?`<div class="tmeta-i"><span class="ico">📅</span>${t.matchDate}</div>`:''}
+      </div>
+      <div class="tirow">
+        <div class="tibox"><div class="tival">${+t.entryFee===0?'FREE':'₹'+t.entryFee}</div><div class="tilbl">Entry</div></div>
+        <div class="tibox"><div class="tival">${max}</div><div class="tilbl">Slots</div></div>
+        <div class="tibox"><div class="tival">${t.matchType||'PP+K'}</div><div class="tilbl">Type</div></div>
+      </div>
+      <div class="sbar">
+        <div class="sbar-top"><span>Slots Filled</span><strong>${filled}/${max}</strong></div>
+        <div class="barbg"><div class="barfill" style="width:${pct}%"></div></div>
+      </div>
+      <button class="jbtn" ${full||ended?'disabled':''} onclick="openJoin('${t.id}','${(t.name||'').replace(/'/g,"\\'")}','${t.mode||'Solo'}','${t.entryFee||0}')">${btxt}</button>
+    </div>
+  </div>`;
+}
+
+function renderT(f){
+  let list=[...allT];
+  if(f==='solo') list=list.filter(t=>(t.mode||'').toLowerCase()==='solo');
+  else if(f==='duo') list=list.filter(t=>(t.mode||'').toLowerCase()==='duo');
+  else if(f==='squad') list=list.filter(t=>(t.mode||'').toLowerCase()==='squad');
+  else if(f==='live') list=list.filter(t=>t.status==='Live');
+  else if(f==='free') list=list.filter(t=>+t.entryFee===0);
+  document.getElementById('tourneyList').innerHTML=list.length?list.map(buildCard).join(''):'<div class="nodata"><div class="ndi">🏆</div>No tournaments in this category</div>';
+}
+
+function filterT(btn,type){
+  document.querySelectorAll('#page-tournaments .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderT(type);
+}
+
+// JOIN
+function openJoin(id,name,mode,fee){
+  document.getElementById('jTid').value=id;
+  document.getElementById('jmTitle').textContent='🔥 '+name;
+  document.getElementById('jmSub').textContent=`Entry: ${+fee===0?'FREE':'₹'+fee} | Mode: ${mode}`;
+  const p=window.playerProfile;
+  if(p){document.getElementById('j-name').value=p.name||'';document.getElementById('j-uid').value=p.ffuid||'';document.getElementById('j-mob').value=p.mobile||'';}
+  document.getElementById('teamGrp').style.display=(mode==='Squad'||mode==='Duo')?'block':'none';
+  document.getElementById('payInfo').style.display=+fee>0?'block':'none';
+  document.getElementById('joinModal').classList.add('open');
+}
+
+function submitJoin(){
+  const tid=document.getElementById('jTid').value;
+  const name=document.getElementById('j-name').value.trim();
+  const uid=document.getElementById('j-uid').value.trim();
+  const mob=document.getElementById('j-mob').value.trim();
+  const team=document.getElementById('j-team').value.trim();
+  const pay=document.getElementById('j-pay').value;
+  if(!name||!uid){showToast('Name & FF UID required!');return;}
+  const t=allT.find(x=>x.id===tid);
+  const data={tournamentId:tid,tournamentName:t?.name||tid,playerName:name,ffuid:uid,mobile:mob,teamName:team,paymentMethod:pay,userId:window.currentUser?.uid||'',status:'Pending',registeredAt:Date.now()};
+  db.ref('registrations').push(data)
+    .then(()=>{
+      if(t&&+t.entryFee>0) db.ref('payments').push({player:name,ffuid:uid,mobile:mob,tournamentId:tid,tournamentName:t.name,amount:+t.entryFee,method:pay,utr:'',status:'Pending',userId:window.currentUser?.uid||'',createdAt:Date.now()});
+      closeM('joinModal');
+      showToast('🎉 Registered! Room ID 30 min before match.');
+    })
+    .catch(e=>showToast('Error: '+e.message));
+}
+
+// LEADERBOARD — realtime
+function loadLB(){
+  db.ref('leaderboard').on('value', snap=>{
+    const el=document.getElementById('lbList');
+    if(!snap.exists()){el.innerHTML='<div class="nodata"><div class="ndi">🏅</div>Leaderboard is empty</div>';return;}
+    let entries=[];
+    snap.forEach(c=>entries.push(c.val()));
+    entries.sort((a,b)=>(b.kills||0)-(a.kills||0));
+    let html='',rank=1;
+    entries.forEach(p=>{
+      const rc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'rx';
+      const re=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'#'+rank;
+      html+=`<div class="lbrow">
+        <div class="lbrank ${rc}">${re}</div>
+        <div class="lbplayer">
+          <div class="pav" style="${rank===1?'background:linear-gradient(135deg,#FFD700,#FF8C00)':''}">${(p.name||'?').charAt(0).toUpperCase()}</div>
+          <div><div class="pnm">${p.name||'—'}</div><div class="pid">${p.ffuid||'—'}</div></div>
+        </div>
+        <div class="lbkills">${p.kills||0}</div>
+        <div class="lbprize">₹${Number(p.prizeWon||0).toLocaleString('en-IN')}</div>
+      </div>`;
+      rank++;
+    });
+    el.innerHTML=html;
+  });
+}
+
+// WALLET
+function loadWallet(){
+  const u=window.currentUser, p=window.playerProfile;
+  if(!u)return;
+  document.getElementById('walBal').textContent=Number(p?.prizeWon||0).toLocaleString('en-IN');
+  let html='';
+  db.ref('payments').orderByChild('userId').equalTo(u.uid).get().then(snap=>{
+    if(snap.exists()) snap.forEach(c=>{const x=c.val();html+=`<div class="txi"><div class="txl"><div class="txicon" style="background:rgba(255,107,0,.12)">💰</div><div><div class="txname">${x.tournamentName||'Tournament'}</div><div class="txdate">${x.status}</div></div></div><div class="txamt dr">-₹${x.amount||0}</div></div>`;});
+    db.ref('withdrawals').orderByChild('userId').equalTo(u.uid).get().then(snap2=>{
+      if(snap2.exists()) snap2.forEach(c=>{const w=c.val();html+=`<div class="txi"><div class="txl"><div class="txicon" style="background:rgba(34,255,106,.12)">💸</div><div><div class="txname">Withdrawal — ${w.method||'UPI'}</div><div class="txdate">${w.status}</div></div></div><div class="txamt cr">+₹${w.amount||0}</div></div>`;});
+      document.getElementById('txList').innerHTML=html||'<div class="nodata"><div class="ndi">📭</div>No transactions yet</div>';
+    });
+  });
+}
+
+function doWithdraw(){
+  const upi=document.getElementById('wd-upi').value.trim();
+  const amt=document.getElementById('wd-amt').value;
+  const meth=document.getElementById('wd-meth').value;
+  if(!upi||!amt||+amt<100){showToast('UPI & min ₹100 required!');return;}
+  const u=window.currentUser, p=window.playerProfile;
+  db.ref('withdrawals').push({userId:u?.uid||'',player:p?.name||'Player',ffuid:p?.ffuid||'',upi,amount:+amt,method:meth,status:'Pending',requestedAt:Date.now()})
+    .then(()=>{document.getElementById('wd-upi').value='';document.getElementById('wd-amt').value='';showToast('Withdrawal requested! ✅');loadWallet();})
+    .catch(e=>showToast('Error: '+e.message));
+}
+
+// ANNOUNCEMENTS — realtime
+function loadAnnouncements(){
+  db.ref('announcements').on('value', snap=>{
+    if(!snap.exists())return;
+    const list=document.getElementById('notifList');
+    list.innerHTML='';
+    let count=0, ticker='';
+    snap.forEach(c=>{
+      const a=c.val();
+      list.innerHTML=`<div class="nitem"><div class="nitem-title">${a.title||''}</div><div class="nitem-msg">${a.message||''}</div></div>`+list.innerHTML;
+      ticker+=`<span style="margin-right:50px">${(a.type||'📢').split(' ')[0]} ${a.title}</span><span style="margin-right:50px">★</span>`;
+      count++;
+    });
+    if(ticker) document.getElementById('tickerEl').innerHTML=ticker+ticker;
+    const b=document.getElementById('notifBadge');
+    b.textContent=Math.min(count,9); b.style.display='flex';
+  });
+}
+
+function toggleNotif(){
+  document.getElementById('ndrop').classList.toggle('open');
+  document.getElementById('notifBadge').style.display='none';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#notifBtn')&&!e.target.closest('#ndrop'))
+    document.getElementById('ndrop')?.classList.remove('open');
+});
+
+// MODAL
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.moverlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeM(m.id);}));
+
+// TOAST
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
